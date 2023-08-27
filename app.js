@@ -3,8 +3,9 @@ const express=require("express")
 const bodyParser=require("body-parser")
 const ejs=require("ejs")
 const mongoose=require("mongoose")
-const encrypt=require("mongoose-encryption");
-require('dotenv').config()
+// const encrypt=require("mongoose-encryption");
+// require('dotenv').config( )
+const md5=require("md5")
 
 
 const app=express();
@@ -26,7 +27,7 @@ app.get("/",function(req,res){
 });
 
 
-userSchema.plugin(encrypt,{secret:process.env.SECRET,encryptedFields:["password"]});
+// userSchema.plugin(encrypt,{secret:process.env.SECRET,encryptedFields:["password"]});
 app.get("/login",function(req,res){
     res.render("login");
 })
@@ -34,19 +35,22 @@ const User=new mongoose.model("User",userSchema);
 
 app.post("/login", async function (req, res) {
     const username = req.body.username;
-    const password = req.body.password;
+    const password = md5(req.body.password); // Using MD5 for demonstration purposes
 
     try {
         const foundUser = await User.findOne({ email: username });
         if (foundUser && foundUser.password === password) {
             console.log(password);
             res.render("secrets");
+        } else {
+            res.status(401).send("Invalid credentials");
         }
     } catch (err) {
         console.log(err);
-        // Handle the error here
+        res.status(500).send("Internal Server Error");
     }
 });
+
 
 app.get("/register",function(req,res){
     res.render("register");
@@ -55,7 +59,7 @@ app.get("/register",function(req,res){
 app.post("/register", async function (req, res) {
     const newUser = new User({
         email: req.body.username,
-        password: req.body.password
+        password: md5(req.body.password)
     });
 
     try {
